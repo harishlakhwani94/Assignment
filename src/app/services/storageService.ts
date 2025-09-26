@@ -17,13 +17,4 @@ export const StorageService = {
   removeFeeds: async () => {
     await AsyncStorage.removeItem('feeds');
   },
-  storeToken: async (token: string) => {
-    await AsyncStorage.setItem('token', token);
-  },
-  getToken: async () => {
-    return AsyncStorage.getItem('token');
-  },
-  removeToken: async () => {
-    await AsyncStorage.removeItem('token');
-  },
 };

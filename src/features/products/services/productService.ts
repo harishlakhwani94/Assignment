@@ -29,11 +29,3 @@ export const fetchProducts = async (
   url += `?${searchParams.toString()}`;
   return apiClient.get(url);
 };
-
-// Custom hook for products service
-export const useProductsService = () => {
-  return {
-    fetchCategories,
-    fetchProducts,
-  };
-};

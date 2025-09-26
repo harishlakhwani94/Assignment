@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { loginService } from '../services/AuthService';
-import { StorageService } from '../../../app/services/storageService';
+import { EncryptStorageService } from '../../../app/services/encryptStorageService';
 
 const useAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -8,7 +8,7 @@ const useAuth = () => {
   const [authenticated, setAuthenticated] = useState(false);
 
   const checkAuth = async () => {
-    const token = await StorageService.getToken();
+    const token = await EncryptStorageService.getToken();
     setAuthenticated(!!token);
   };
 
@@ -26,7 +26,7 @@ const useAuth = () => {
     try {
       const response = await loginService({ email, password });
       if (response && response.token) {
-        await StorageService.storeToken(response.token);
+        await EncryptStorageService.storeToken(response.token);
         setAuthenticated(true);
         if (onSuccess) onSuccess();
       } else {
@@ -41,7 +41,7 @@ const useAuth = () => {
   };
 
   const logout = async () => {
-    await StorageService.removeToken();
+    await EncryptStorageService.removeToken();
     setAuthenticated(false);
   };
 
