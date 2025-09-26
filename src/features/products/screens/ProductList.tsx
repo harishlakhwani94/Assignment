@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useProduct } from '../hooks/useProduct';
+import { Product, Category } from '../types/apiTypes';
 import {
   View,
   Text,
@@ -10,60 +12,34 @@ import {
   Dimensions,
 } from 'react-native';
 
-const PRODUCT_API = 'https://dummyjson.com/products';
-const CATEGORY_API = 'https://dummyjson.com/products/categories';
-const PAGE_LIMIT = 12;
 const numColumns = 2;
 const { width } = Dimensions.get('window');
 
 const ProductList = () => {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('beauty');
+  const {
+    search,
+    setSearch,
+    category,
+    setCategory,
+    categories,
+    products,
+    getCategories,
+    getProducts,
+    hasMore,
+  } = useProduct();
   const [loading, setLoading] = useState(false);
-  const [skip, setSkip] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
+  const [reset, setReset] = useState(false);
+  const numColumns = 2;
+  const { width } = Dimensions.get('window');
 
   useEffect(() => {
-    fetch(CATEGORY_API)
-      .then(res => res.json())
-      .then(data => setCategories(data))
-      .catch(() => setCategories([]));
+    getCategories();
   }, []);
 
-  const fetchProducts = useCallback(
-    async (reset = false) => {
-      setLoading(true);
-      let url = `${PRODUCT_API}?limit=${PAGE_LIMIT}&skip=${reset ? 0 : skip}`;
-      if (search) url += `&q=${encodeURIComponent(search)}`;
-      if (category)
-        url = `https://dummyjson.com/products/category/${category}?limit=${PAGE_LIMIT}&skip=${
-          reset ? 0 : skip
-        }`;
-      const res = await fetch(url);
-      const data = await res.json();
-      let newProducts = reset ? data.products : [...products, ...data.products];
-      setProducts(newProducts);
-      setHasMore(newProducts.length < data.total ? true : false);
-      setLoading(false);
-      setSkip(reset ? PAGE_LIMIT : skip + PAGE_LIMIT);
-    },
-    [search, category, skip, products],
-  );
-
   useEffect(() => {
-    fetchProducts(true);
+    getProducts(reset);
   }, [search, category]);
 
-  // Infinite scroll
-  const handleEndReached = () => {
-    if (!loading && hasMore) {
-      fetchProducts();
-    }
-  };
-
-  // FlatList optimization
   const getItemLayout = (
     data: ArrayLike<any> | null | undefined,
     index: number,
@@ -73,11 +49,40 @@ const ProductList = () => {
     index,
   });
 
-  const renderProduct = ({ item }: { item: any }) => (
+  const renderProduct = ({ item }: { item: Product }) => (
     <View style={styles.productCard}>
       <Text style={styles.productTitle}>{item.title}</Text>
       <Text style={styles.productPrice}>${item.price}</Text>
     </View>
+  );
+
+  const handleEndReached = async () => {
+    if (!hasMore) return;
+    getProducts();
+  };
+
+  const categorySelected = (item: Category) => {
+    setReset(true);
+    setCategory(item.slug);
+  };
+
+  const renderCategory = ({ item }: { item: Category }) => (
+    <TouchableOpacity
+      style={[
+        styles.categoryBtn,
+        category === item.slug && styles.categoryBtnActive,
+      ]}
+      onPress={() => categorySelected(item)}
+    >
+      <Text
+        style={[
+          styles.categoryText,
+          category === item.slug && styles.categoryTextActive,
+        ]}
+      >
+        {item.name}
+      </Text>
+    </TouchableOpacity>
   );
 
   return (
@@ -91,18 +96,8 @@ const ProductList = () => {
       <FlatList
         data={categories}
         horizontal
-        keyExtractor={item => item.slug.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.categoryBtn,
-              category === item.slug && styles.categoryBtnActive,
-            ]}
-            onPress={() => setCategory(item.slug)}
-          >
-            <Text style={styles.categoryText}>{item.name}</Text>
-          </TouchableOpacity>
-        )}
+        keyExtractor={item => item.slug}
+        renderItem={renderCategory}
         showsHorizontalScrollIndicator={false}
         style={styles.categoryList}
       />
@@ -116,6 +111,7 @@ const ProductList = () => {
         initialNumToRender={8}
         removeClippedSubviews={true}
         getItemLayout={getItemLayout}
+        style={styles.productList}
         ListFooterComponent={
           loading ? <ActivityIndicator style={{ margin: 16 }} /> : null
         }
@@ -126,7 +122,6 @@ const ProductList = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: '#fff',
     paddingTop: 16,
     gap: 16,
@@ -137,7 +132,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    backgroundColor: 'pink',
   },
   categoryList: {
     paddingHorizontal: 16,
@@ -158,8 +152,12 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: 'bold',
   },
+  categoryTextActive: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   productList: {
-    backgroundColor: 'yellow',
+    marginBottom: 16,
   },
   productCard: {
     flex: 1,

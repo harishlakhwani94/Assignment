@@ -4,6 +4,7 @@ import NewsFeed from '../../features/news/screens/NewsFeed';
 import WeatherScreen from '../../features/weather/screens/WeatherScreen';
 import ProfileScreen from '../../features/profile/screens/ProfileScreen';
 import ProductList from '../../features/products/screens/ProductList';
+import ExpenseScreen from '../../features/expense/screens/ExpenseScreen';
 
 const BottomTab = createBottomTabNavigator();
 
@@ -28,6 +29,11 @@ const TabNavigator = () => (
       name="Products"
       component={ProductList}
       options={{ title: 'Products' }}
+    />
+    <BottomTab.Screen
+      name="Expenses"
+      component={ExpenseScreen}
+      options={{ title: 'Expenses' }}
     />
   </BottomTab.Navigator>
 );
